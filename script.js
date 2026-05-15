@@ -50,7 +50,7 @@ const serviceDurations = [
 const bookingForm = document.getElementById('bookingForm');
 
 if (bookingForm) {
-  const serviceSelect = document.getElementById('bookingService');
+  const serviceChoices = document.getElementById('bookingServices');
   const dateInput = document.getElementById('bookingDate');
   const timeInput = document.getElementById('bookingTime');
   const slotGrid = document.getElementById('slotGrid');
@@ -61,10 +61,16 @@ if (bookingForm) {
   const storageKey = 'beeautyLightBookings';
 
   serviceDurations.forEach((service) => {
-    const option = document.createElement('option');
-    option.value = service.name;
-    option.textContent = `${service.name} - ${service.minutes} min`;
-    serviceSelect.appendChild(option);
+    const choice = document.createElement('label');
+    choice.className = 'service-choice';
+    choice.innerHTML = `
+      <input type="checkbox" name="services" value="${service.name}" />
+      <span>
+        <strong>${service.name}</strong>
+        <small>${service.minutes} min</small>
+      </span>
+    `;
+    serviceChoices.appendChild(choice);
 
     const row = document.createElement('div');
     row.className = 'duration-item';
@@ -77,7 +83,15 @@ if (bookingForm) {
   dateInput.min = todayIso;
   dateInput.value = todayIso;
 
-  serviceSelect.addEventListener('change', renderAvailability);
+  const serviceInputs = [...serviceChoices.querySelectorAll('input[name="services"]')];
+  serviceInputs[0].checked = true;
+
+  serviceChoices.addEventListener('change', () => {
+    if (!getSelectedServices().length) {
+      serviceInputs[0].checked = true;
+    }
+    renderAvailability();
+  });
   dateInput.addEventListener('change', renderAvailability);
 
   bookingForm.addEventListener('submit', (event) => {
@@ -88,15 +102,16 @@ if (bookingForm) {
       return;
     }
 
-    const selectedService = getSelectedService();
+    const selectedServices = getSelectedServices();
+    const totalMinutes = getTotalDuration(selectedServices);
     const formData = new FormData(bookingForm);
     const booking = {
       id: `${Date.now()}`,
-      service: selectedService.name,
+      services: selectedServices.map((service) => service.name),
       date: dateInput.value,
       start: timeInput.value,
-      end: addMinutes(timeInput.value, selectedService.minutes),
-      minutes: selectedService.minutes,
+      end: addMinutes(timeInput.value, totalMinutes),
+      minutes: totalMinutes,
       name: formData.get('name'),
       contact: formData.get('contact'),
       notes: formData.get('notes')
@@ -106,10 +121,12 @@ if (bookingForm) {
     bookings.push(booking);
     localStorage.setItem(storageKey, JSON.stringify(bookings));
 
-    bookingStatus.textContent = `Requested ${booking.service} on ${formatDate(booking.date)} at ${formatTime(booking.start)}. That time is now unavailable.`;
+    bookingStatus.textContent = `Requested ${booking.services.join(' + ')} on ${formatDate(booking.date)} at ${formatTime(booking.start)}. That time is now unavailable.`;
     bookingForm.reset();
     dateInput.value = booking.date;
-    serviceSelect.value = booking.service;
+    serviceInputs.forEach((input) => {
+      input.checked = booking.services.includes(input.value);
+    });
     timeInput.value = '';
     renderAvailability();
   });
@@ -124,7 +141,8 @@ if (bookingForm) {
   renderAvailability();
 
   function renderAvailability() {
-    const selectedService = getSelectedService();
+    const selectedServices = getSelectedServices();
+    const totalMinutes = getTotalDuration(selectedServices);
     const selectedDate = parseIsoDate(dateInput.value);
     const day = selectedDate.getDay();
     const hours = getHoursForDay(day);
@@ -132,9 +150,9 @@ if (bookingForm) {
     timeInput.value = '';
     slotGrid.innerHTML = '';
     durationPanel.innerHTML = `
-      <strong>${selectedService.name}</strong>
-      <span>${selectedService.minutes} minutes</span>
-      <p>${selectedService.note}</p>
+      <strong>${selectedServices.map((service) => service.name).join(' + ')}</strong>
+      <span>${totalMinutes} minutes total</span>
+      <p>${selectedServices.length > 1 ? 'These services will be booked together as one longer appointment.' : selectedServices[0].note}</p>
     `;
 
     if (!hours) {
@@ -142,15 +160,15 @@ if (bookingForm) {
       return;
     }
 
-    const slots = buildSlots(hours.start, hours.end, selectedService.minutes);
+    const slots = buildSlots(hours.start, hours.end, totalMinutes);
     const bookings = getBookings().filter((booking) => booking.date === dateInput.value);
     const availableSlots = slots.filter((slot) => {
-      const slotEnd = addMinutes(slot, selectedService.minutes);
+      const slotEnd = addMinutes(slot, totalMinutes);
       return !bookings.some((booking) => rangesOverlap(slot, slotEnd, booking.start, booking.end));
     });
 
     if (!availableSlots.length) {
-      slotGrid.innerHTML = '<p class="empty-slots">No times left for this service on this date. Try another day.</p>';
+      slotGrid.innerHTML = '<p class="empty-slots">No times left for these services on this date. Try another day.</p>';
       return;
     }
 
@@ -169,8 +187,15 @@ if (bookingForm) {
     });
   }
 
-  function getSelectedService() {
-    return serviceDurations.find((service) => service.name === serviceSelect.value) || serviceDurations[0];
+  function getSelectedServices() {
+    return serviceInputs
+      .filter((input) => input.checked)
+      .map((input) => serviceDurations.find((service) => service.name === input.value))
+      .filter(Boolean);
+  }
+
+  function getTotalDuration(services) {
+    return services.reduce((total, service) => total + service.minutes, 0);
   }
 
   function getBookings() {
