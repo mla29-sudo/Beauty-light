@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Work | Beeauty Light Studio</title>
+    <meta
+      name="description"
+      content="View recent beauty, nail, eyebrow, lash, facial, and foot care work from Beeauty Light Studio."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="booking.css" />
+    <link rel="stylesheet" href="work.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="logo" href="index.html" aria-label="Beeauty Light Studio home">
+        <img class="logo-img" src="logo.png" alt="Beeauty Light Studio logo" />
+        <span>Beeauty Light Studio</span>
+      </a>
+      <button class="menu-btn" aria-label="Toggle navigation" aria-expanded="false">Menu</button>
+      <nav class="nav" id="site-nav">
+        <a href="index.html#services">Services</a>
+        <a href="my-work.html">My Work</a>
+        <a href="index.html#expectations">Expectations</a>
+        <a href="index.html#reviews">Reviews</a>
+        <a href="booking.html">Book</a>
+        <a href="index.html#contact">Contact</a>
+      </nav>
+    </header>
+
+    <main class="work-page">
+      <section class="work-hero reveal">
+        <div>
+          <p class="eyebrow">My Work</p>
+          <h1>Recent finishes from the studio.</h1>
+          <p>
+            A place for polished nails, refreshed skin, shaped eyebrows, tinted lashes, smooth waxing results, and the
+            little details that show the care behind each appointment.
+          </p>
+        </div>
+        <div class="work-hero-image" aria-hidden="true"></div>
+      </section>
+
+      <section class="work-gallery reveal" aria-label="Gallery of studio work">
+        <!-- Replace these image links with your own photos when you are ready. -->
+        <article class="work-card work-card-large">
+          <img
+            src="https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=900&q=80"
+            alt="Fresh manicure with soft polish"
+          />
+          <div>
+            <span>Manicures</span>
+            <h2>Clean shaping and glossy soft color.</h2>
+          </div>
+        </article>
+        <article class="work-card">
+          <img
+            src="https://images.unsplash.com/photo-1519014816548-bf5fe059798b?auto=format&fit=crop&w=700&q=80"
+            alt="Pedicure detail with polished toenails"
+          />
+          <div>
+            <span>Pedicures</span>
+            <h2>Fresh feet, neat nails, and a smooth finish.</h2>
+          </div>
+        </article>
+        <article class="work-card">
+          <img
+            src="https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=700&q=80"
+            alt="Relaxing facial treatment"
+          />
+          <div>
+            <span>Facials</span>
+            <h2>Hydrated skin with a calm post-facial glow.</h2>
+          </div>
+        </article>
+        <article class="work-card">
+          <img
+            src="https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?auto=format&fit=crop&w=700&q=80"
+            alt="Eyebrow and lash tinting result"
+          />
+          <div>
+            <span>Eyebrows and Lashes</span>
+            <h2>Soft definition that still looks natural.</h2>
+          </div>
+        </article>
+        <article class="work-card">
+          <img
+            src="https://images.unsplash.com/photo-1596178060671-7a80dc8059ea?auto=format&fit=crop&w=700&q=80"
+            alt="Smooth skincare result after waxing"
+          />
+          <div>
+            <span>Waxing</span>
+            <h2>Smooth skin with clean prep and aftercare.</h2>
+          </div>
+        </article>
+        <article class="work-card work-card-wide">
+          <img
+            src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=900&q=80"
+            alt="Modern beauty studio workspace"
+          />
+          <div>
+            <span>Studio Details</span>
+            <h2>Quiet, clean, and ready for one-on-one care.</h2>
+          </div>
+        </article>
+      </section>
+
+      <section class="work-cta reveal">
+        <div>
+          <p class="eyebrow">Ready for your turn?</p>
+          <h2>Choose a service and find a time that fits.</h2>
+        </div>
+        <a class="btn btn-primary" href="booking.html">Book an Appointment</a>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div>
+          <a class="footer-logo" href="index.html">Beeauty Light Studio</a>
+          <p>Beauty, skin, nail, eyebrow, and lash care in a soft modern studio.</p>
+        </div>
+        <div>
+          <h3>Contact</h3>
+          <p><a href="tel:+15068973627">(506) 897-3627</a></p>
+          <p><a href="mailto:hello@beeautylightstudio.com">hello@beeautylightstudio.com</a></p>
+          <p>40 Jason Crt</p>
+        </div>
+        <div>
+          <h3>Explore</h3>
+          <a href="index.html#services">Services</a>
+          <a href="my-work.html">My Work</a>
+          <a href="booking.html">Booking</a>
+        </div>
+      </div>
+      <p class="copyright">&copy; <span id="year"></span> Beeauty Light Studio. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
