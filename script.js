@@ -85,12 +85,8 @@ if (bookingForm) {
   dateInput.value = todayIso;
 
   const serviceInputs = [...serviceChoices.querySelectorAll('input[name="services"]')];
-  serviceInputs[0].checked = true;
 
   serviceChoices.addEventListener('change', () => {
-    if (!getSelectedServices().length) {
-      serviceInputs[0].checked = true;
-    }
     renderAvailability();
   });
   dateInput.addEventListener('change', renderAvailability);
@@ -98,12 +94,18 @@ if (bookingForm) {
   bookingForm.addEventListener('submit', (event) => {
     event.preventDefault();
 
+    const selectedServices = getSelectedServices();
+
+    if (!selectedServices.length) {
+      bookingStatus.textContent = 'Please choose at least one service before submitting.';
+      return;
+    }
+
     if (!timeInput.value) {
       bookingStatus.textContent = 'Please choose an available time before submitting.';
       return;
     }
 
-    const selectedServices = getSelectedServices();
     const totalMinutes = getTotalDuration(selectedServices);
     const totalPrice = getTotalPrice(selectedServices);
     const formData = new FormData(bookingForm);
@@ -153,6 +155,17 @@ if (bookingForm) {
 
     timeInput.value = '';
     slotGrid.innerHTML = '';
+
+    if (!selectedServices.length) {
+      durationPanel.innerHTML = `
+        <strong>Choose your services</strong>
+        <span>$0 estimated</span>
+        <p>Select one or more services to see matching appointment times.</p>
+      `;
+      slotGrid.innerHTML = '<p class="empty-slots">Choose at least one service to see available times.</p>';
+      return;
+    }
+
     durationPanel.innerHTML = `
       <strong>${selectedServices.map((service) => service.name).join(' + ')}</strong>
       <span>${totalMinutes} minutes total</span>
