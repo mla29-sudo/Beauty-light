@@ -17,7 +17,8 @@
       <section class="booking-hero reveal"><div><p class="eyebrow">Booking calendar</p><h1>Choose your service, then pick an available time.</h1><p>Appointment lengths are estimated from common salon timing ranges and include a small buffer for setup, questions, and aftercare.</p></div><aside class="booking-note"><h3>Studio Hours</h3><p>Mon-Fri: 9:00 AM - 7:00 PM</p><p>Saturday: 10:00 AM - 5:00 PM</p><p>Sunday: Closed</p></aside></section>
       <section class="booking-layout reveal">
         <form class="booking-form" id="bookingForm">
-          <div class="form-row"><label>Service<select id="bookingService" name="service"></select></label><label>Date<input id="bookingDate" type="date" name="date" required /></label></div>
+          <div class="service-picker"><h2>Services</h2><p>Select one or more services for the same appointment.</p><div class="service-choice-grid" id="bookingServices"></div></div>
+          <div class="form-row"><label>Date<input id="bookingDate" type="date" name="date" required /></label></div>
           <div class="duration-panel" id="durationPanel" aria-live="polite"></div>
           <div><h2>Available Times</h2><div class="slot-grid" id="slotGrid" aria-live="polite"></div></div>
           <div class="form-row"><label>Full Name<input type="text" name="name" placeholder="Your name" required /></label><label>Phone or Email<input type="text" name="contact" placeholder="(506) 897-3627 or email@example.com" required /></label></div>
