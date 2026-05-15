@@ -36,12 +36,213 @@ if (menuBtn && nav) {
   });
 }
 
-const contactForm = document.querySelector('.contact-form');
+const serviceDurations = [
+  { name: 'Electrolysis', minutes: 45, note: 'Short consultation plus a focused treatment block.' },
+  { name: 'Waxing', minutes: 45, note: 'Average block for common waxing services; large areas may need more time.' },
+  { name: 'Pedicures', minutes: 60, note: 'Classic pedicure timing with room for polish and care notes.' },
+  { name: 'Medical pedicures', minutes: 75, note: 'More detailed foot care and wellness-focused attention.' },
+  { name: 'Manicures', minutes: 45, note: 'Standard manicure timing for shaping, care, and finish.' },
+  { name: 'Facials', minutes: 75, note: 'Full skin reset timing with consultation and aftercare.' },
+  { name: 'Eyebrow Tinting', minutes: 20, note: 'Quick color service with preparation and cleanup.' },
+  { name: 'Lash tinting', minutes: 25, note: 'Lash preparation, tint processing, and cleanup.' }
+];
 
-if (contactForm) {
-  contactForm.addEventListener('submit', (event) => {
+const bookingForm = document.getElementById('bookingForm');
+
+if (bookingForm) {
+  const serviceSelect = document.getElementById('bookingService');
+  const dateInput = document.getElementById('bookingDate');
+  const timeInput = document.getElementById('bookingTime');
+  const slotGrid = document.getElementById('slotGrid');
+  const durationPanel = document.getElementById('durationPanel');
+  const durationList = document.getElementById('durationList');
+  const bookingStatus = document.getElementById('bookingStatus');
+  const clearBookings = document.getElementById('clearBookings');
+  const storageKey = 'beeautyLightBookings';
+
+  serviceDurations.forEach((service) => {
+    const option = document.createElement('option');
+    option.value = service.name;
+    option.textContent = `${service.name} - ${service.minutes} min`;
+    serviceSelect.appendChild(option);
+
+    const row = document.createElement('div');
+    row.className = 'duration-item';
+    row.innerHTML = `<strong>${service.name}</strong><span>${service.minutes} min</span>`;
+    durationList.appendChild(row);
+  });
+
+  const today = new Date();
+  const todayIso = toIsoDate(today);
+  dateInput.min = todayIso;
+  dateInput.value = todayIso;
+
+  serviceSelect.addEventListener('change', renderAvailability);
+  dateInput.addEventListener('change', renderAvailability);
+
+  bookingForm.addEventListener('submit', (event) => {
     event.preventDefault();
-    alert("Thank you for contacting Beeauty Light Studio. We'll reach out shortly to confirm your appointment.");
-    contactForm.reset();
+
+    if (!timeInput.value) {
+      bookingStatus.textContent = 'Please choose an available time before submitting.';
+      return;
+    }
+
+    const selectedService = getSelectedService();
+    const formData = new FormData(bookingForm);
+    const booking = {
+      id: `${Date.now()}`,
+      service: selectedService.name,
+      date: dateInput.value,
+      start: timeInput.value,
+      end: addMinutes(timeInput.value, selectedService.minutes),
+      minutes: selectedService.minutes,
+      name: formData.get('name'),
+      contact: formData.get('contact'),
+      notes: formData.get('notes')
+    };
+
+    const bookings = getBookings();
+    bookings.push(booking);
+    localStorage.setItem(storageKey, JSON.stringify(bookings));
+
+    bookingStatus.textContent = `Requested ${booking.service} on ${formatDate(booking.date)} at ${formatTime(booking.start)}. That time is now unavailable.`;
+    bookingForm.reset();
+    dateInput.value = booking.date;
+    serviceSelect.value = booking.service;
+    timeInput.value = '';
+    renderAvailability();
+  });
+
+  clearBookings.addEventListener('click', () => {
+    localStorage.removeItem(storageKey);
+    bookingStatus.textContent = 'Demo bookings cleared. All valid times are available again.';
+    timeInput.value = '';
+    renderAvailability();
+  });
+
+  renderAvailability();
+
+  function renderAvailability() {
+    const selectedService = getSelectedService();
+    const selectedDate = parseIsoDate(dateInput.value);
+    const day = selectedDate.getDay();
+    const hours = getHoursForDay(day);
+
+    timeInput.value = '';
+    slotGrid.innerHTML = '';
+    durationPanel.innerHTML = `
+      <strong>${selectedService.name}</strong>
+      <span>${selectedService.minutes} minutes</span>
+      <p>${selectedService.note}</p>
+    `;
+
+    if (!hours) {
+      slotGrid.innerHTML = '<p class="empty-slots">Closed on Sundays. Please choose another date.</p>';
+      return;
+    }
+
+    const slots = buildSlots(hours.start, hours.end, selectedService.minutes);
+    const bookings = getBookings().filter((booking) => booking.date === dateInput.value);
+    const availableSlots = slots.filter((slot) => {
+      const slotEnd = addMinutes(slot, selectedService.minutes);
+      return !bookings.some((booking) => rangesOverlap(slot, slotEnd, booking.start, booking.end));
+    });
+
+    if (!availableSlots.length) {
+      slotGrid.innerHTML = '<p class="empty-slots">No times left for this service on this date. Try another day.</p>';
+      return;
+    }
+
+    availableSlots.forEach((slot) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'slot-button';
+      button.textContent = formatTime(slot);
+      button.addEventListener('click', () => {
+        document.querySelectorAll('.slot-button.selected').forEach((item) => item.classList.remove('selected'));
+        button.classList.add('selected');
+        timeInput.value = slot;
+        bookingStatus.textContent = `${formatTime(slot)} selected.`;
+      });
+      slotGrid.appendChild(button);
+    });
+  }
+
+  function getSelectedService() {
+    return serviceDurations.find((service) => service.name === serviceSelect.value) || serviceDurations[0];
+  }
+
+  function getBookings() {
+    try {
+      return JSON.parse(localStorage.getItem(storageKey)) || [];
+    } catch {
+      return [];
+    }
+  }
+}
+
+function getHoursForDay(day) {
+  if (day === 0) return null;
+  if (day === 6) return { start: '10:00', end: '17:00' };
+  return { start: '09:00', end: '19:00' };
+}
+
+function buildSlots(openTime, closeTime, duration) {
+  const slots = [];
+  let cursor = toMinutes(openTime);
+  const latestStart = toMinutes(closeTime) - duration;
+
+  while (cursor <= latestStart) {
+    slots.push(fromMinutes(cursor));
+    cursor += 15;
+  }
+
+  return slots;
+}
+
+function rangesOverlap(startA, endA, startB, endB) {
+  return toMinutes(startA) < toMinutes(endB) && toMinutes(endA) > toMinutes(startB);
+}
+
+function addMinutes(time, minutes) {
+  return fromMinutes(toMinutes(time) + minutes);
+}
+
+function toMinutes(time) {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+function fromMinutes(totalMinutes) {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+function formatTime(time) {
+  const [hours, minutes] = time.split(':').map(Number);
+  const suffix = hours >= 12 ? 'PM' : 'AM';
+  const hour12 = hours % 12 || 12;
+  return `${hour12}:${String(minutes).padStart(2, '0')} ${suffix}`;
+}
+
+function toIsoDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function parseIsoDate(value) {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function formatDate(value) {
+  return parseIsoDate(value).toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric'
   });
 }
