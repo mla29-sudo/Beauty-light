@@ -36,15 +36,16 @@ if (menuBtn && nav) {
   });
 }
 
+// Edit service appointment lengths and prices here.
 const serviceDurations = [
-  { name: 'Electrolysis', minutes: 45, note: 'Short consultation plus a focused treatment block.' },
-  { name: 'Waxing', minutes: 45, note: 'Average block for common waxing services; large areas may need more time.' },
-  { name: 'Pedicures', minutes: 60, note: 'Classic pedicure timing with room for polish and care notes.' },
-  { name: 'Medical pedicures', minutes: 75, note: 'More detailed foot care and wellness-focused attention.' },
-  { name: 'Manicures', minutes: 45, note: 'Standard manicure timing for shaping, care, and finish.' },
-  { name: 'Facials', minutes: 75, note: 'Full skin reset timing with consultation and aftercare.' },
-  { name: 'Eyebrow Tinting', minutes: 20, note: 'Quick color service with preparation and cleanup.' },
-  { name: 'Lash tinting', minutes: 25, note: 'Lash preparation, tint processing, and cleanup.' }
+  { name: 'Electrolysis', minutes: 45, price: 65, note: 'Short consultation plus a focused treatment block.' },
+  { name: 'Waxing', minutes: 45, price: 45, note: 'Average block for common waxing services; large areas may need more time.' },
+  { name: 'Pedicures', minutes: 60, price: 55, note: 'Classic pedicure timing with room for polish and care notes.' },
+  { name: 'Medical pedicures', minutes: 75, price: 80, note: 'More detailed foot care and wellness-focused attention.' },
+  { name: 'Manicures', minutes: 45, price: 40, note: 'Standard manicure timing for shaping, care, and finish.' },
+  { name: 'Facials', minutes: 75, price: 95, note: 'Full skin reset timing with consultation and aftercare.' },
+  { name: 'Eyebrow Tinting', minutes: 20, price: 20, note: 'Quick color service with preparation and cleanup.' },
+  { name: 'Lash tinting', minutes: 25, price: 25, note: 'Lash preparation, tint processing, and cleanup.' }
 ];
 
 const bookingForm = document.getElementById('bookingForm');
@@ -67,14 +68,14 @@ if (bookingForm) {
       <input type="checkbox" name="services" value="${service.name}" />
       <span>
         <strong>${service.name}</strong>
-        <small>${service.minutes} min</small>
+        <small>${service.minutes} min - ${formatPrice(service.price)}</small>
       </span>
     `;
     serviceChoices.appendChild(choice);
 
     const row = document.createElement('div');
     row.className = 'duration-item';
-    row.innerHTML = `<strong>${service.name}</strong><span>${service.minutes} min</span>`;
+    row.innerHTML = `<strong>${service.name}</strong><span>${service.minutes} min - ${formatPrice(service.price)}</span>`;
     durationList.appendChild(row);
   });
 
@@ -104,6 +105,7 @@ if (bookingForm) {
 
     const selectedServices = getSelectedServices();
     const totalMinutes = getTotalDuration(selectedServices);
+    const totalPrice = getTotalPrice(selectedServices);
     const formData = new FormData(bookingForm);
     const booking = {
       id: `${Date.now()}`,
@@ -112,6 +114,7 @@ if (bookingForm) {
       start: timeInput.value,
       end: addMinutes(timeInput.value, totalMinutes),
       minutes: totalMinutes,
+      price: totalPrice,
       name: formData.get('name'),
       contact: formData.get('contact'),
       notes: formData.get('notes')
@@ -121,7 +124,7 @@ if (bookingForm) {
     bookings.push(booking);
     localStorage.setItem(storageKey, JSON.stringify(bookings));
 
-    bookingStatus.textContent = `Requested ${booking.services.join(' + ')} on ${formatDate(booking.date)} at ${formatTime(booking.start)}. That time is now unavailable.`;
+    bookingStatus.textContent = `Requested ${booking.services.join(' + ')} on ${formatDate(booking.date)} at ${formatTime(booking.start)}. Estimated total: ${formatPrice(booking.price)}. That time is now unavailable.`;
     bookingForm.reset();
     dateInput.value = booking.date;
     serviceInputs.forEach((input) => {
@@ -143,6 +146,7 @@ if (bookingForm) {
   function renderAvailability() {
     const selectedServices = getSelectedServices();
     const totalMinutes = getTotalDuration(selectedServices);
+    const totalPrice = getTotalPrice(selectedServices);
     const selectedDate = parseIsoDate(dateInput.value);
     const day = selectedDate.getDay();
     const hours = getHoursForDay(day);
@@ -152,6 +156,7 @@ if (bookingForm) {
     durationPanel.innerHTML = `
       <strong>${selectedServices.map((service) => service.name).join(' + ')}</strong>
       <span>${totalMinutes} minutes total</span>
+      <span>${formatPrice(totalPrice)} estimated</span>
       <p>${selectedServices.length > 1 ? 'These services will be booked together as one longer appointment.' : selectedServices[0].note}</p>
     `;
 
@@ -168,7 +173,7 @@ if (bookingForm) {
     });
 
     if (!availableSlots.length) {
-      slotGrid.innerHTML = '<p class="empty-slots">No times left for these services on this date. Try another day.</p>';
+      slotGrid.innerHTML = '<p class="empty-slots">No times left for this service on this date. Try another day.</p>';
       return;
     }
 
@@ -196,6 +201,10 @@ if (bookingForm) {
 
   function getTotalDuration(services) {
     return services.reduce((total, service) => total + service.minutes, 0);
+  }
+
+  function getTotalPrice(services) {
+    return services.reduce((total, service) => total + service.price, 0);
   }
 
   function getBookings() {
@@ -270,4 +279,8 @@ function formatDate(value) {
     month: 'short',
     day: 'numeric'
   });
+}
+
+function formatPrice(price) {
+  return `$${price}`;
 }
