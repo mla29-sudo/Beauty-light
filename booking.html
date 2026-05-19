@@ -1,0 +1,132 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Book an Appointment | Beeauty Light Studio</title>
+    <meta
+      name="description"
+      content="Book an appointment at Beeauty Light Studio with an availability calendar for beauty, nail, skin, brow, lash, and electrolysis services."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="booking.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="logo" href="index.html" aria-label="Beeauty Light Studio home">
+        <img class="logo-img" src="logo.png" alt="Beeauty Light Studio logo" />
+        <span>Beeauty Light Studio</span>
+      </a>
+      <button class="menu-btn" aria-label="Toggle navigation" aria-expanded="false">Menu</button>
+      <nav class="nav" id="site-nav">
+        <a href="index.html#services">Services</a>
+        <a href="my-work.html">My Work</a>
+        <a href="index.html#expectations">Expectations</a>
+        <a href="index.html#reviews">Reviews</a>
+        <a href="index.html#contact">Contact</a>
+      </nav>
+    </header>
+
+    <main class="booking-page">
+      <section class="booking-hero reveal">
+        <div>
+          <p class="eyebrow">Booking calendar</p>
+          <h1>Choose your service, then pick an available time.</h1>
+          <p>
+            Appointment lengths are estimated from common salon timing ranges and include a small buffer for setup,
+            questions, and aftercare.
+          </p>
+        </div>
+        <aside class="booking-note">
+          <h3>Studio Hours</h3>
+          <p>Mon-Fri: 9:00 AM - 7:00 PM</p>
+          <p>Saturday: 10:00 AM - 5:00 PM</p>
+          <p>Sunday: Closed</p>
+        </aside>
+      </section>
+
+      <section class="booking-layout reveal">
+        <form class="booking-form" id="bookingForm">
+          <div class="service-picker">
+            <h2>Services</h2>
+            <p>Select one or more services for the same appointment.</p>
+            <div class="service-choice-grid" id="bookingServices"></div>
+          </div>
+
+          <div class="form-row">
+            <label>
+              Date
+              <input id="bookingDate" type="date" name="date" required />
+            </label>
+          </div>
+
+          <div class="duration-panel" id="durationPanel" aria-live="polite"></div>
+
+          <div>
+            <h2>Available Times</h2>
+            <div class="slot-grid" id="slotGrid" aria-live="polite"></div>
+          </div>
+
+          <div class="form-row">
+            <label>
+              Full Name
+              <input type="text" name="name" placeholder="Your name" required />
+            </label>
+            <label>
+              Phone or Email
+              <input type="text" name="contact" placeholder="(506) 897-3627 or email@example.com" required />
+            </label>
+          </div>
+
+          <label>
+            Notes
+            <textarea name="notes" rows="4" placeholder="Anything we should know before your visit?"></textarea>
+          </label>
+
+          <input type="hidden" id="bookingTime" name="time" required />
+          <button class="btn btn-primary" type="submit">Request Appointment</button>
+          <p class="booking-status" id="bookingStatus" aria-live="polite"></p>
+        </form>
+
+        <aside class="booking-sidebar">
+          <h2>Estimated Service Times</h2>
+          <div id="durationList" class="duration-list"></div>
+          <button class="btn btn-secondary clear-bookings" type="button" id="clearBookings">Clear Demo Bookings</button>
+        </aside>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div>
+          <a class="footer-logo" href="index.html">Beeauty Light Studio</a>
+          <p>Beauty, skin, nail, eyebrow, and lash care in a soft modern studio.</p>
+        </div>
+        <div>
+          <h3>Contact</h3>
+          <p><a href="tel:+15068973627">(506) 897-3627</a></p>
+          <p><a href="mailto:hello@beeautylightstudio.com">hello@beeautylightstudio.com</a></p>
+          <p>40 Jason Crt</p>
+        </div>
+        <div>
+          <h3>Services</h3>
+          <a href="electrolysis.html">Electrolysis</a>
+          <a href="waxing.html">Waxing</a>
+          <a href="my-work.html">My Work</a>
+          <a href="facials.html">Facials</a>
+          <a href="manicures.html">Manicures</a>
+        </div>
+      </div>
+      <p class="copyright">&copy; <span id="year"></span> Beeauty Light Studio. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
+
