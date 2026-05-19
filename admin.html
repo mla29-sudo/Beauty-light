@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Admin Dashboard | Beeauty Light Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="booking.css" />
+    <link rel="stylesheet" href="admin.css" />
+  </head>
+  <body>
+    <header class="site-header admin-site-header">
+      <a class="logo" href="index.html" aria-label="Beeauty Light Studio home">
+        <img class="logo-img" src="logo.png" alt="Beeauty Light Studio logo" />
+        <span>Beeauty Light Studio</span>
+      </a>
+      <button class="menu-btn" aria-label="Toggle navigation" aria-expanded="false">Menu</button>
+      <nav class="nav" id="site-nav">
+        <a href="booking.html">Booking</a>
+        <a href="my-work.html">My Work</a>
+        <a href="index.html">Website</a>
+      </nav>
+    </header>
+
+    <main class="admin-page">
+      <section class="admin-hero reveal">
+        <div>
+          <p class="eyebrow">Admin dashboard</p>
+          <h1>Manage appointments, gallery photos, and studio notes.</h1>
+          <p>
+            Review booking requests, block time, add photos to My Work, and export your local admin data for backup.
+          </p>
+        </div>
+        <aside class="admin-login" id="adminGate">
+          <h2>Admin Access</h2>
+          <p>Enter your dashboard passcode for this browser.</p>
+          <form id="adminLoginForm">
+            <label>
+              Passcode
+              <input id="adminPasscode" type="password" autocomplete="current-password" required />
+            </label>
+            <button class="btn btn-primary" type="submit">Unlock Dashboard</button>
+            <p class="admin-status" id="loginStatus" aria-live="polite"></p>
+          </form>
+        </aside>
+      </section>
+
+      <section class="admin-shell is-locked" id="adminDashboard" aria-live="polite">
+        <div class="admin-toolbar">
+          <div>
+            <p class="eyebrow">Today</p>
+            <h2 id="todayHeading">Appointment board</h2>
+          </div>
+          <div class="admin-toolbar-actions">
+            <button class="btn btn-secondary" type="button" id="exportData">Export Backup</button>
+            <label class="btn btn-secondary import-button">
+              Import Backup
+              <input id="importData" type="file" accept="application/json" />
+            </label>
+          </div>
+        </div>
+
+        <section class="admin-stats" aria-label="Dashboard summary">
+          <article>
+            <strong id="totalBookings">0</strong>
+            <span>Total appointments</span>
+          </article>
+          <article>
+            <strong id="pendingBookings">0</strong>
+            <span>Need review</span>
+          </article>
+          <article>
+            <strong id="galleryCount">0</strong>
+            <span>Custom work photos</span>
+          </article>
+        </section>
+
+        <div class="admin-grid">
+          <section class="admin-panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Appointments</p>
+                <h2>Requests and blocked time</h2>
+              </div>
+              <label class="filter-control">
+                Filter
+                <select id="bookingFilter">
+                  <option value="all">All</option>
+                  <option value="requested">Requested</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </label>
+            </div>
+            <div class="appointment-list" id="appointmentList"></div>
+          </section>
+
+          <aside class="admin-panel">
+            <p class="eyebrow">Add appointment</p>
+            <h2>Manual booking</h2>
+            <form class="admin-form" id="manualBookingForm">
+              <label>
+                Client Name
+                <input name="name" type="text" placeholder="Client name" required />
+              </label>
+              <label>
+                Contact
+                <input name="contact" type="text" placeholder="Phone or email" required />
+              </label>
+              <label>
+                Services
+                <input name="services" type="text" placeholder="Manicure, Facial" required />
+              </label>
+              <div class="form-row compact-row">
+                <label>
+                  Date
+                  <input name="date" type="date" required />
+                </label>
+                <label>
+                  Time
+                  <input name="start" type="time" required />
+                </label>
+              </div>
+              <div class="form-row compact-row">
+                <label>
+                  Minutes
+                  <input name="minutes" type="number" min="15" step="15" value="45" required />
+                </label>
+                <label>
+                  Price
+                  <input name="price" type="number" min="0" step="5" value="0" />
+                </label>
+              </div>
+              <label>
+                Notes
+                <textarea name="notes" rows="3" placeholder="Optional notes"></textarea>
+              </label>
+              <button class="btn btn-primary" type="submit">Add Appointment</button>
+            </form>
+          </aside>
+        </div>
+
+        <div class="admin-grid">
+          <section class="admin-panel">
+            <p class="eyebrow">My Work</p>
+            <h2>Add gallery photo</h2>
+            <form class="admin-form" id="workPhotoForm">
+              <label>
+                Photo
+                <input name="photo" type="file" accept="image/*" required />
+              </label>
+              <label>
+                Category
+                <input name="category" type="text" placeholder="Manicures" required />
+              </label>
+              <label>
+                Caption
+                <input name="title" type="text" placeholder="Clean shaping and glossy color" required />
+              </label>
+              <label>
+                Alt Text
+                <input name="alt" type="text" placeholder="Fresh manicure with soft polish" required />
+              </label>
+              <label>
+                Card Size
+                <select name="size">
+                  <option value="">Regular</option>
+                  <option value="large">Large</option>
+                  <option value="wide">Wide</option>
+                </select>
+              </label>
+              <button class="btn btn-primary" type="submit">Add to My Work</button>
+              <p class="admin-status" id="photoStatus" aria-live="polite"></p>
+            </form>
+          </section>
+
+          <section class="admin-panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Gallery</p>
+                <h2>Custom photos</h2>
+              </div>
+              <a class="btn btn-secondary" href="my-work.html">View Page</a>
+            </div>
+            <div class="admin-gallery" id="adminGallery"></div>
+          </section>
+        </div>
+
+        <section class="admin-panel">
+          <p class="eyebrow">Studio notes</p>
+          <h2>Private checklist</h2>
+          <textarea id="studioNotes" class="notes-area" rows="7" placeholder="Supplies to buy, clients to follow up with, ideas for photos..."></textarea>
+          <div class="admin-form-actions">
+            <button class="btn btn-primary" type="button" id="saveNotes">Save Notes</button>
+            <p class="admin-status" id="notesStatus" aria-live="polite"></p>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+    <script src="admin.js"></script>
+  </body>
+</html>

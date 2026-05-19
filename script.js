@@ -119,7 +119,9 @@ if (bookingForm) {
       price: totalPrice,
       name: formData.get('name'),
       contact: formData.get('contact'),
-      notes: formData.get('notes')
+      notes: formData.get('notes'),
+      status: 'requested',
+      source: 'website'
     };
 
     const bookings = getBookings();
