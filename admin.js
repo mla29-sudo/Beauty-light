@@ -1,8 +1,8 @@
 const adminKeys = {
-  bookings: 'beeautyLightBookings',
-  work: 'beeautyLightWorkItems',
-  notes: 'beeautyLightStudioNotes',
-  unlocked: 'beeautyLightAdminUnlocked'
+  bookings: 'beautyLightBookings',
+  work: 'beautyLightWorkItems',
+  notes: 'beautyLightStudioNotes',
+  unlocked: 'beautyLightAdminUnlocked'
 };
 
 const defaultPasscode = 'beauty2026';
@@ -63,7 +63,7 @@ function unlockDashboard() {
   renderAdminGallery();
 }
 
-function addManualBooking(event) {
+async function addManualBooking(event) {
   event.preventDefault();
 
   const formData = new FormData(manualBookingForm);
@@ -84,18 +84,24 @@ function addManualBooking(event) {
     source: 'admin'
   };
 
-  const bookings = getBookings();
-  bookings.push(booking);
-  saveBookings(bookings);
+  try {
+    await createSharedBooking(booking);
+  } catch (error) {
+    alert(error.message || 'Could not save that booking to the shared calendar.');
+    return;
+  }
+
   manualBookingForm.reset();
   manualBookingForm.elements.minutes.value = 45;
   manualBookingForm.elements.price.value = 0;
   renderAppointments();
 }
 
-function renderAppointments() {
+async function renderAppointments() {
   const filter = bookingFilter.value;
-  const bookings = getBookings()
+  appointmentList.innerHTML = '<p class="empty-admin">Loading appointments...</p>';
+
+  const bookings = (await getBookings())
     .map(normalizeBooking)
     .sort((a, b) => `${a.date} ${a.start}`.localeCompare(`${b.date} ${b.start}`));
   const visibleBookings = filter === 'all' ? bookings : bookings.filter((booking) => booking.status === filter);
@@ -216,16 +222,23 @@ function renderAdminGallery() {
   });
 }
 
-function updateBookingStatus(id, status) {
-  saveBookings(getBookings().map((booking) => {
-    if (booking.id !== id) return booking;
-    return { ...booking, status };
-  }));
+async function updateBookingStatus(id, status) {
+  try {
+    await updateSharedBookingStatus(id, status);
+  } catch (error) {
+    alert(error.message || 'Could not update that booking.');
+  }
+
   renderAppointments();
 }
 
-function deleteBooking(id) {
-  saveBookings(getBookings().filter((booking) => booking.id !== id));
+async function deleteBooking(id) {
+  try {
+    await deleteSharedBooking(id);
+  } catch (error) {
+    alert(error.message || 'Could not delete that booking.');
+  }
+
   renderAppointments();
 }
 
@@ -234,17 +247,17 @@ function saveStudioNotes() {
   notesStatus.textContent = 'Notes saved.';
 }
 
-function exportBackup() {
+async function exportBackup() {
   const data = {
     exportedAt: new Date().toISOString(),
-    bookings: getBookings(),
+    bookings: await getBookings(),
     workItems: getWorkItems(),
     notes: localStorage.getItem(adminKeys.notes) || ''
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = `beeauty-admin-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  link.download = `beauty-admin-backup-${new Date().toISOString().slice(0, 10)}.json`;
   link.click();
   URL.revokeObjectURL(link.href);
 }
@@ -254,10 +267,10 @@ function importBackup(event) {
   if (!file) return;
 
   const reader = new FileReader();
-  reader.addEventListener('load', () => {
+  reader.addEventListener('load', async () => {
     try {
       const data = JSON.parse(reader.result);
-      if (Array.isArray(data.bookings)) saveBookings(data.bookings);
+      if (Array.isArray(data.bookings)) await replaceSharedBookings(data.bookings);
       if (Array.isArray(data.workItems)) saveWorkItems(data.workItems);
       if (typeof data.notes === 'string') localStorage.setItem(adminKeys.notes, data.notes);
       studioNotes.value = localStorage.getItem(adminKeys.notes) || '';
@@ -271,12 +284,43 @@ function importBackup(event) {
   event.target.value = '';
 }
 
-function getBookings() {
-  return readJson(adminKeys.bookings);
+async function getBookings() {
+  return loadBookings(adminKeys.bookings);
 }
 
 function saveBookings(bookings) {
   localStorage.setItem(adminKeys.bookings, JSON.stringify(bookings.map(normalizeBooking)));
+}
+
+async function updateSharedBookingStatus(id, status) {
+  const response = await fetch(`${bookingApiBase}/bookings/${encodeURIComponent(id)}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status })
+  });
+
+  if (!response.ok) throw new Error('Could not update booking status.');
+  return response.json();
+}
+
+async function deleteSharedBooking(id) {
+  const response = await fetch(`${bookingApiBase}/bookings/${encodeURIComponent(id)}`, {
+    method: 'DELETE'
+  });
+
+  if (!response.ok) throw new Error('Could not delete booking.');
+  return response.json();
+}
+
+async function replaceSharedBookings(bookings) {
+  const response = await fetch(`${bookingApiBase}/bookings`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(bookings)
+  });
+
+  if (!response.ok) throw new Error('Could not import bookings to the shared calendar.');
+  return response.json();
 }
 
 function getWorkItems() {

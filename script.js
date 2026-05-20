@@ -1,4 +1,4 @@
-﻿const revealItems = document.querySelectorAll('.reveal');
+const revealItems = document.querySelectorAll('.reveal');
 
 if ('IntersectionObserver' in window) {
   const observer = new IntersectionObserver((entries) => {
@@ -59,7 +59,7 @@ if (bookingForm) {
   const durationList = document.getElementById('durationList');
   const bookingStatus = document.getElementById('bookingStatus');
   const clearBookings = document.getElementById('clearBookings');
-  const storageKey = 'beeautyLightBookings';
+  const storageKey = 'beautyLightBookings';
 
   serviceDurations.forEach((service) => {
     const choice = document.createElement('label');
@@ -91,7 +91,7 @@ if (bookingForm) {
   });
   dateInput.addEventListener('change', renderAvailability);
 
-  bookingForm.addEventListener('submit', (event) => {
+  bookingForm.addEventListener('submit', async (event) => {
     event.preventDefault();
 
     const selectedServices = getSelectedServices();
@@ -109,12 +109,12 @@ if (bookingForm) {
     const totalMinutes = getTotalDuration(selectedServices);
     const totalPrice = getTotalPrice(selectedServices);
     const formData = new FormData(bookingForm);
+    const bookingEnd = addMinutes(timeInput.value, totalMinutes);
     const booking = {
-      id: `${Date.now()}`,
       services: selectedServices.map((service) => service.name),
       date: dateInput.value,
       start: timeInput.value,
-      end: addMinutes(timeInput.value, totalMinutes),
+      end: bookingEnd,
       minutes: totalMinutes,
       price: totalPrice,
       name: formData.get('name'),
@@ -124,9 +124,25 @@ if (bookingForm) {
       source: 'website'
     };
 
-    const bookings = getBookings();
-    bookings.push(booking);
-    localStorage.setItem(storageKey, JSON.stringify(bookings));
+    bookingStatus.textContent = 'Checking that time...';
+
+    try {
+      const bookings = await getBookings();
+      const conflict = bookings.some((item) => item.date === booking.date && blocksAvailability(item) && rangesOverlap(booking.start, booking.end, item.start, item.end));
+
+      if (conflict) {
+        bookingStatus.textContent = 'That time was just booked. Please choose another available time.';
+        timeInput.value = '';
+        await renderAvailability();
+        return;
+      }
+
+      await saveBooking(booking);
+    } catch (error) {
+      bookingStatus.textContent = error.message || 'Could not save the appointment. Please try again.';
+      await renderAvailability();
+      return;
+    }
 
     bookingStatus.textContent = `Requested ${booking.services.join(' + ')} on ${formatDate(booking.date)} at ${formatTime(booking.start)}. Estimated total: ${formatPrice(booking.price)}. That time is now unavailable.`;
     bookingForm.reset();
@@ -139,15 +155,14 @@ if (bookingForm) {
   });
 
   clearBookings.addEventListener('click', () => {
-    localStorage.removeItem(storageKey);
-    bookingStatus.textContent = 'Demo bookings cleared. All valid times are available again.';
+    bookingStatus.textContent = 'Refreshing available times...';
     timeInput.value = '';
     renderAvailability();
   });
 
   renderAvailability();
 
-  function renderAvailability() {
+  async function renderAvailability() {
     const selectedServices = getSelectedServices();
     const totalMinutes = getTotalDuration(selectedServices);
     const totalPrice = getTotalPrice(selectedServices);
@@ -181,7 +196,9 @@ if (bookingForm) {
     }
 
     const slots = buildSlots(hours.start, hours.end, totalMinutes);
-    const bookings = getBookings().filter((booking) => booking.date === dateInput.value);
+    slotGrid.innerHTML = '<p class="empty-slots">Checking current availability...</p>';
+
+    const bookings = (await getBookings()).filter((booking) => booking.date === dateInput.value && blocksAvailability(booking));
     const availableSlots = slots.filter((slot) => {
       const slotEnd = addMinutes(slot, totalMinutes);
       return !bookings.some((booking) => rangesOverlap(slot, slotEnd, booking.start, booking.end));
@@ -192,6 +209,7 @@ if (bookingForm) {
       return;
     }
 
+    slotGrid.innerHTML = '';
     availableSlots.forEach((slot) => {
       const button = document.createElement('button');
       button.type = 'button';
@@ -223,12 +241,60 @@ if (bookingForm) {
   }
 
   function getBookings() {
+    return loadBookings(storageKey);
+  }
+
+  async function saveBooking(booking) {
     try {
-      return JSON.parse(localStorage.getItem(storageKey)) || [];
-    } catch {
-      return [];
+      return await createSharedBooking(booking);
+    } catch (error) {
+      if (error.status === 409) throw error;
+      throw new Error('The shared booking server is not running. Please try again in a moment.');
     }
   }
+}
+
+const bookingApiBase = window.location.protocol === 'file:' ? 'http://localhost:3000/api' : '/api';
+
+async function loadBookings(storageKey = 'beautyLightBookings') {
+  try {
+    const response = await fetch(`${bookingApiBase}/bookings`, { cache: 'no-store' });
+    if (!response.ok) throw new Error('Shared booking server is unavailable.');
+    const bookings = await response.json();
+    localStorage.setItem(storageKey, JSON.stringify(bookings));
+    return Array.isArray(bookings) ? bookings : [];
+  } catch {
+    return readLocalBookings(storageKey);
+  }
+}
+
+async function createSharedBooking(booking) {
+  const response = await fetch(`${bookingApiBase}/bookings`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(booking)
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const error = new Error(data.error || 'Could not save the appointment.');
+    error.status = response.status;
+    throw error;
+  }
+
+  return data;
+}
+
+function readLocalBookings(storageKey = 'beautyLightBookings') {
+  try {
+    return JSON.parse(localStorage.getItem(storageKey)) || [];
+  } catch {
+    return [];
+  }
+}
+
+function blocksAvailability(booking) {
+  return booking.status !== 'cancelled';
 }
 
 function getHoursForDay(day) {

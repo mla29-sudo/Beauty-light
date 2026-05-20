@@ -19,7 +19,7 @@ if (workGallery) {
 
 function readWorkItems() {
   try {
-    return JSON.parse(localStorage.getItem('beeautyLightWorkItems')) || [];
+    return JSON.parse(localStorage.getItem('beautyLightWorkItems')) || [];
   } catch {
     return [];
   }
