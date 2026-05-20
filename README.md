@@ -30,3 +30,21 @@ DATA_DIR=/path/to/persistent/storage
 ```
 
 Bookings are written to `bookings.json` inside that folder. Without persistent storage or a real database, appointments may disappear when the online server restarts.
+
+## Booking Notifications
+
+The server can send confirmation emails with Resend and SMS messages with Twilio after a customer requests an appointment.
+
+Set these environment variables in Render under **Environment**:
+
+```bash
+STUDIO_NAME=Beauty Light Studio
+OWNER_EMAIL=your-email@example.com
+RESEND_API_KEY=re_your_resend_key
+RESEND_FROM_EMAIL=Beauty Light Studio <appointments@your-domain.com>
+TWILIO_ACCOUNT_SID=AC_your_twilio_sid
+TWILIO_AUTH_TOKEN=your_twilio_auth_token
+TWILIO_FROM_NUMBER=+15065551234
+```
+
+Email requires `RESEND_API_KEY` and `RESEND_FROM_EMAIL`. SMS requires all three Twilio variables. If a customer types an email in the contact field, they receive an email. If they type a phone number, they receive a text message. The studio owner receives a new-booking email when `OWNER_EMAIL` is set.

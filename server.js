@@ -6,6 +6,13 @@ const port = Number(process.env.PORT) || 3000;
 const rootDir = __dirname;
 const dataDir = process.env.DATA_DIR || path.join(rootDir, 'data');
 const bookingFile = path.join(dataDir, 'bookings.json');
+const studioName = process.env.STUDIO_NAME || 'Beauty Light Studio';
+const ownerEmail = process.env.OWNER_EMAIL || '';
+const resendApiKey = process.env.RESEND_API_KEY || '';
+const resendFromEmail = process.env.RESEND_FROM_EMAIL || '';
+const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID || '';
+const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN || '';
+const twilioFromNumber = process.env.TWILIO_FROM_NUMBER || '';
 
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -66,6 +73,9 @@ const server = http.createServer(async (request, response) => {
 
       bookings.push(savedBooking);
       await writeBookings(bookings);
+      notifyBooking(savedBooking).catch((error) => {
+        console.error('Booking notification failed:', error);
+      });
       sendJson(response, savedBooking, 201);
       return;
     }
@@ -191,6 +201,123 @@ function normalizeBooking(booking) {
   };
 }
 
+async function notifyBooking(booking) {
+  const customerEmail = extractEmail(booking.contact);
+  const customerPhone = extractPhone(booking.contact);
+  const subject = `Appointment request received - ${studioName}`;
+  const plainMessage = buildBookingMessage(booking);
+  const htmlMessage = buildBookingHtml(booking);
+
+  if (customerEmail) {
+    await sendEmail({
+      to: customerEmail,
+      subject,
+      html: htmlMessage
+    });
+  }
+
+  if (ownerEmail) {
+    await sendEmail({
+      to: ownerEmail,
+      subject: `New appointment request from ${booking.name}`,
+      html: buildOwnerBookingHtml(booking)
+    });
+  }
+
+  if (customerPhone) {
+    await sendSms(customerPhone, plainMessage);
+  }
+}
+
+async function sendEmail({ to, subject, html }) {
+  if (!resendApiKey || !resendFromEmail) return;
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      from: resendFromEmail,
+      to,
+      subject,
+      html
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Resend email failed: ${errorText}`);
+  }
+}
+
+async function sendSms(to, body) {
+  if (!twilioAccountSid || !twilioAuthToken || !twilioFromNumber) return;
+
+  const params = new URLSearchParams({
+    To: to,
+    From: twilioFromNumber,
+    Body: body
+  });
+
+  const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${twilioAccountSid}:${twilioAuthToken}`).toString('base64')}`,
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: params
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Twilio SMS failed: ${errorText}`);
+  }
+}
+
+function buildBookingMessage(booking) {
+  return `${studioName}: We received your appointment request for ${booking.services.join(' + ')} on ${formatDate(booking.date)} at ${formatTime(booking.start)}. We will confirm it soon.`;
+}
+
+function buildBookingHtml(booking) {
+  return `
+    <h1>Appointment request received</h1>
+    <p>Hi ${escapeHtml(booking.name)}, we received your appointment request.</p>
+    <p><strong>Service:</strong> ${escapeHtml(booking.services.join(' + '))}</p>
+    <p><strong>Date:</strong> ${escapeHtml(formatDate(booking.date))}</p>
+    <p><strong>Time:</strong> ${escapeHtml(formatTime(booking.start))} - ${escapeHtml(formatTime(booking.end))}</p>
+    <p><strong>Estimated total:</strong> ${escapeHtml(formatPrice(booking.price || 0))}</p>
+    <p>We will confirm your appointment soon.</p>
+  `;
+}
+
+function buildOwnerBookingHtml(booking) {
+  return `
+    <h1>New appointment request</h1>
+    <p><strong>Name:</strong> ${escapeHtml(booking.name)}</p>
+    <p><strong>Contact:</strong> ${escapeHtml(booking.contact)}</p>
+    <p><strong>Service:</strong> ${escapeHtml(booking.services.join(' + '))}</p>
+    <p><strong>Date:</strong> ${escapeHtml(formatDate(booking.date))}</p>
+    <p><strong>Time:</strong> ${escapeHtml(formatTime(booking.start))} - ${escapeHtml(formatTime(booking.end))}</p>
+    <p><strong>Estimated total:</strong> ${escapeHtml(formatPrice(booking.price || 0))}</p>
+    ${booking.notes ? `<p><strong>Notes:</strong> ${escapeHtml(booking.notes)}</p>` : ''}
+  `;
+}
+
+function extractEmail(value) {
+  const match = String(value).match(/[^\s@]+@[^\s@]+\.[^\s@]+/);
+  return match ? match[0] : '';
+}
+
+function extractPhone(value) {
+  const normalized = String(value).replace(/[^\d+]/g, '');
+  if (normalized.startsWith('+') && normalized.length >= 10) return normalized;
+  if (normalized.length === 10) return `+1${normalized}`;
+  if (normalized.length === 11 && normalized.startsWith('1')) return `+${normalized}`;
+  return '';
+}
+
 function blocksAvailability(booking) {
   return booking.status !== 'cancelled';
 }
@@ -209,4 +336,34 @@ function rangesOverlap(startA, endA, startB, endB) {
 function toMinutes(time) {
   const [hours, minutes] = String(time).split(':').map(Number);
   return hours * 60 + minutes;
+}
+
+function formatDate(value) {
+  const [year, month, day] = String(value).split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString('en-CA', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+}
+
+function formatTime(time) {
+  const [hours, minutes] = String(time).split(':').map(Number);
+  const suffix = hours >= 12 ? 'PM' : 'AM';
+  const hour12 = hours % 12 || 12;
+  return `${hour12}:${String(minutes).padStart(2, '0')} ${suffix}`;
+}
+
+function formatPrice(price) {
+  return `$${price}`;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }
